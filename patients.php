@@ -225,12 +225,14 @@ try {
                         Patients Management
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
+                        <?php if (!hasRole('doctor')): ?>
                         <a href="patients.php?action=add" class="btn btn-primary">
                             <i class="fas fa-user-plus"></i> Add New Patient
                         </a>
                         <button type="button" class="btn btn-danger" style="background-color:#e53935; border:none; font-weight:bold; margin-left:8px;" onclick="deleteSelectedPatients()">
                             <i class="fas fa-trash"></i> Delete Patient
                         </button>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -327,12 +329,14 @@ try {
                                                     <a href="patients.php?action=view&id=<?php echo $patient['id']; ?>" class="btn btn-info btn-action-icon" title="View Details">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
+                                                    <?php if (!hasRole('doctor')): ?>
                                                     <a href="patients.php?action=edit&id=<?php echo $patient['id']; ?>" class="btn btn-warning btn-action-icon" title="Edit">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                     <a href="appointments.php?action=add&patient_id=<?php echo $patient['id']; ?>" class="btn btn-success btn-action-icon" title="Schedule Appointment">
                                                         <i class="fas fa-calendar-plus"></i>
                                                     </a>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
                                         </tr>

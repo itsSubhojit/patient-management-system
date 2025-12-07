@@ -5,23 +5,18 @@ A comprehensive web-based patient management system designed for hospitals, clin
 ## Features
 
 ### Core Functionality
-- **User Authentication**: Secure login/register system with role-based access control
-- **Patient Registration**: Complete patient information management with search capabilities
-- **Appointment Scheduling**: Book, manage, and track patient appointments
-- **Medical History Tracking**: Maintain detailed medical records and visit history
+- **User Authentication**: Secure login system with role-based access control (no public registration)
+- **Patient Management**: Add, edit, and view patient details
+- **Appointment Scheduling**: Book, manage, and track appointments
 - **Dashboard**: Overview of key metrics and recent activities
 
 ### User Roles
 - **Admin**: Full system access, user management, system settings
-- **Doctor**: Patient records, medical history, prescriptions, appointments
-- **Nurse**: Patient care, vital signs, basic medical records
-- **Receptionist**: Patient registration, appointment scheduling, basic information
+- **Doctor**: Patient records, appointments, diagnosis
 
 ### Key Features
 - Responsive design for mobile and desktop
-- Search and filtering capabilities
 - Patient ID auto-generation
-- Medical history with vital signs tracking
 - Appointment status management
 - Role-based navigation and permissions
 - Data validation and security measures
@@ -46,7 +41,7 @@ A comprehensive web-based patient management system designed for hospitals, clin
    - Or run the SQL commands manually from the setup.sql file
 
 3. **File Placement**
-   - Copy the `patient-management` folder to `C:\xampp\htdocs\`
+   - Copy the `patient-management-system` folder to `C:\xampp\htdocs\`
    - Ensure proper file permissions
 
 4. **Configuration**
@@ -73,10 +68,6 @@ A comprehensive web-based patient management system designed for hospitals, clin
 - **Username**: `dr.smith`
 - **Password**: `password`
 
-### Receptionist
-- **Username**: `receptionist`
-- **Password**: `password`
-
 **⚠️ Important**: Change these default passwords after first login!
 
 ## System Requirements
@@ -97,23 +88,21 @@ A comprehensive web-based patient management system designed for hospitals, clin
 ## File Structure
 
 ```
-patient-management/
+patient-management-system/
 ├── css/
 │   └── style.css
 ├── js/
 │   └── dashboard.js
+├── images/
+│   └── back-img.jpg
 ├── includes/
 │   ├── config.php
-│   ├── navbar.php
-│   └── sidebar.php
-├── admin/
+│   └── navbar.php
 ├── dashboard.php
 ├── login.php
-├── register.php
 ├── logout.php
 ├── patients.php
 ├── appointments.php
-├── medical-history.php
 ├── index.php
 └── setup.sql
 ```
@@ -123,55 +112,41 @@ patient-management/
 ### Getting Started
 1. Login with default credentials
 2. Change default passwords
-3. Add doctors and staff members
-4. Start registering patients
+3. Add doctors (admin only)
+4. Register patients
 5. Schedule appointments
 
 ### Patient Management
-- Click "Patients" in the sidebar
+- Click "Patients" in the navigation bar
 - Use "Add New Patient" to register patients
-- Search patients using the search bar
-- Edit patient information as needed
-- View patient details and history
+- Search and edit patient information
+- View patient details and appointment history
 
 ### Appointment Scheduling
-- Navigate to "Appointments"
+- Go to "Appointments" in the navigation bar
 - Click "Schedule Appointment"
 - Select patient and doctor
 - Choose date and time
 - Add reason for visit
 - Manage appointment status
 
-### Medical Records
-- Access "Medical History" from sidebar
-- Add new medical records after patient visits
-- Include vital signs, diagnosis, and treatment
-- Track follow-up appointments
-- Maintain comprehensive patient history
-
 ### User Management (Admin Only)
-- Access admin panel
-- Add new users (doctors, nurses, staff)
-- Assign appropriate roles
+- Add new doctors
 - Manage user permissions
 
 ## Database Schema
 
 ### Main Tables
+
 - **users**: System users and authentication
 - **patients**: Patient information and demographics
 - **doctors**: Doctor profiles and specializations
 - **appointments**: Appointment scheduling and management
-- **medical_history**: Patient visit records and medical data
-- **prescriptions**: Medication prescriptions
-- **lab_tests**: Laboratory test orders and results
-- **billing**: Patient billing and payment tracking
 
 ### Key Relationships
+
 - Users can be linked to doctor profiles
 - Appointments link patients with doctors
-- Medical history tracks patient visits
-- Prescriptions are tied to medical history records
 
 ## Security Features
 
@@ -188,7 +163,7 @@ patient-management/
 1. Create new PHP files following the existing structure
 2. Include proper authentication checks
 3. Use the established CSS classes for styling
-4. Add navigation links in sidebar.php
+4. Add navigation links in navbar.php
 5. Update database schema if needed
 
 ### Styling Changes

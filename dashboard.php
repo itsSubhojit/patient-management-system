@@ -16,9 +16,22 @@ try {
     $stats['today_appointments'] = $stmt->fetch()['count'];
     
     // Pending appointments
-    $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM appointments WHERE status = 'scheduled'");
-    $stmt->execute();
-    $stats['pending_appointments'] = $stmt->fetch()['count'];
+    if (hasRole('doctor')) {
+        // Get doctor id from session user id
+        $doctor_user_id = $_SESSION['user_id'];
+        $stmt = $pdo->prepare("SELECT id FROM doctors WHERE user_id = ?");
+        $stmt->execute([$doctor_user_id]);
+        $doctor_row = $stmt->fetch();
+        $doctor_id = $doctor_row ? $doctor_row['id'] : 0;
+        // Count confirmed appointments for this doctor
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM appointments WHERE status = 'confirmed' AND doctor_id = ?");
+        $stmt->execute([$doctor_id]);
+        $stats['pending_appointments'] = $stmt->fetch()['count'];
+    } else {
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM appointments WHERE status = 'scheduled'");
+        $stmt->execute();
+        $stats['pending_appointments'] = $stmt->fetch()['count'];
+    }
     
     // Total doctors
     $stmt = $pdo->query("SELECT COUNT(*) as count FROM doctors");

@@ -12,7 +12,7 @@ CREATE TABLE users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
-    role ENUM('admin', 'doctor', 'nurse', 'receptionist') DEFAULT 'receptionist',
+    role ENUM('admin', 'doctor') DEFAULT 'doctor',
     phone VARCHAR(15),
     address TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -116,53 +116,13 @@ CREATE TABLE prescriptions (
     FOREIGN KEY (medical_history_id) REFERENCES medical_history(id)
 );
 
--- Lab tests table
-CREATE TABLE lab_tests (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    test_id VARCHAR(20) UNIQUE NOT NULL,
-    patient_id INT NOT NULL,
-    doctor_id INT NOT NULL,
-    test_name VARCHAR(100) NOT NULL,
-    test_type VARCHAR(50) NOT NULL,
-    ordered_date DATE NOT NULL,
-    sample_collected_date DATE,
-    result_date DATE,
-    result TEXT,
-    normal_range VARCHAR(100),
-    status ENUM('ordered', 'sample_collected', 'in_progress', 'completed', 'cancelled') DEFAULT 'ordered',
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (patient_id) REFERENCES patients(id),
-    FOREIGN KEY (doctor_id) REFERENCES doctors(id)
-);
 
--- Billing table
-CREATE TABLE billing (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    bill_id VARCHAR(20) UNIQUE NOT NULL,
-    patient_id INT NOT NULL,
-    appointment_id INT,
-    total_amount DECIMAL(10,2) NOT NULL,
-    paid_amount DECIMAL(10,2) DEFAULT 0.00,
-    payment_status ENUM('pending', 'partial', 'paid', 'overdue') DEFAULT 'pending',
-    payment_method ENUM('cash', 'card', 'insurance', 'online') NULL,
-    payment_date DATE NULL,
-    due_date DATE NOT NULL,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (patient_id) REFERENCES patients(id),
-    FOREIGN KEY (appointment_id) REFERENCES appointments(id)
-);
 
 -- Insert default admin user
 INSERT INTO users (username, email, password, full_name, role, phone) VALUES
 ('admin', 'admin@hospital.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin', '+1234567890');
 
 
--- Insert sample receptionist
-INSERT INTO users (username, email, password, full_name, role, phone) VALUES
-('receptionist', 'reception@hospital.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jane Doe', 'receptionist', '+1234567892');
 
 CREATE INDEX idx_patients_patient_id ON patients(patient_id);
 CREATE INDEX idx_appointments_date ON appointments(appointment_date);
@@ -170,9 +130,6 @@ CREATE INDEX idx_appointments_status ON appointments(status);
 CREATE INDEX idx_medical_history_patient ON medical_history(patient_id);
 CREATE INDEX idx_medical_history_date ON medical_history(visit_date);
 CREATE INDEX idx_prescriptions_patient ON prescriptions(patient_id);
-CREATE INDEX idx_lab_tests_patient ON lab_tests(patient_id);
-CREATE INDEX idx_billing_patient ON billing(patient_id);
-CREATE INDEX idx_billing_status ON billing(payment_status);
 
 -- Create triggers for automatic ID generation
 DELIMITER //
@@ -204,23 +161,7 @@ BEGIN
     END IF;
 END//
 
-CREATE TRIGGER before_test_insert 
-BEFORE INSERT ON lab_tests
-FOR EACH ROW
-BEGIN
-    IF NEW.test_id = '' OR NEW.test_id IS NULL THEN
-        SET NEW.test_id = CONCAT('TST', LPAD((SELECT IFNULL(MAX(CAST(SUBSTRING(test_id, 4) AS UNSIGNED)), 0) + 1 FROM lab_tests), 6, '0'));
-    END IF;
-END//
 
-CREATE TRIGGER before_bill_insert 
-BEFORE INSERT ON billing
-FOR EACH ROW
-BEGIN
-    IF NEW.bill_id = '' OR NEW.bill_id IS NULL THEN
-        SET NEW.bill_id = CONCAT('BIL', LPAD((SELECT IFNULL(MAX(CAST(SUBSTRING(bill_id, 4) AS UNSIGNED)), 0) + 1 FROM billing), 6, '0'));
-    END IF;
-END//
 
 DELIMITER ;
 

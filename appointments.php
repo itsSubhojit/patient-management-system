@@ -197,7 +197,7 @@ try {
               JOIN doctors d ON a.doctor_id = d.id
               JOIN users u ON d.user_id = u.id
               $where_clause
-              ORDER BY a.appointment_date DESC, a.appointment_time DESC
+              ORDER BY a.created_at ASC
               LIMIT $limit OFFSET $offset";
     
     $stmt = $pdo->prepare($query);
@@ -235,11 +235,13 @@ $selected_patient_id = $_GET['patient_id'] ?? '';
                     <h1 class="dashboard-title display-6 fw-bold mb-0 d-flex align-items-center gap-2">
                         Appointments Management
                     </h1>
+                    <?php if (!hasRole('doctor')): ?>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <a href="appointments.php?action=add" class="btn btn-primary">
                             <i class="fas fa-calendar-plus"></i> Schedule Appointment
                         </a>
                     </div>
+                    <?php endif; ?>
                 </div>
 
                 <?php displayAlert(); ?>

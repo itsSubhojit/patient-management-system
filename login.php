@@ -95,28 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </button>
             </form>
             
-            <div class="login-footer">
-                <p>Don't have an account? <a href="register.php">Register here</a></p>
-                <p><a href="#" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Forgot your password?</a></p>
-            </div>
+            
             
            
-        </div>
-    </div>
-
-    <!-- Forgot Password Modal -->
-    <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Forgot Password</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Please contact your system administrator to reset your password.</p>
-                    <p><strong>Admin Email:</strong> admin@hospital.com</p>
-                </div>
-            </div>
         </div>
     </div>
 
