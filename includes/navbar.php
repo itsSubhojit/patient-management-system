@@ -24,22 +24,12 @@
                         <i class="fas fa-calendar-alt"></i> <span>Appointments</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center gap-2" href="medical-history.php">
-                        <i class="fas fa-notes-medical"></i> <span>Medical History</span>
-                    </a>
-                </li>
-                <?php if (hasRole('admin') || hasRole('doctor')): ?>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-chart-bar"></i> <span>Reports</span>
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="reports/patients.php">Patient Reports</a></li>
-                        <li><a class="dropdown-item" href="reports/appointments.php">Appointment Reports</a></li>
-                        <li><a class="dropdown-item" href="reports/billing.php">Billing Reports</a></li>
-                    </ul>
-                </li>
+                <?php if (hasRole('admin')): ?>
+                 <li class="nav-item">
+                     <a class="nav-link d-flex align-items-center gap-2" href="doctors.php">
+                         <i class="fas fa-user-md"></i> <span>Doctors</span>
+                     </a>
+                 </li>
                 <?php endif; ?>
             </ul>
             <ul class="navbar-nav">

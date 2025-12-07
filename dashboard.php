@@ -79,77 +79,128 @@ try {
 
                 <!-- Statistics Cards -->
                 <div class="row mb-4 justify-content-center">
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card modern-stat-card h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="stat-label text-uppercase mb-2">
-                                        Total Patients
+                    <?php if (hasRole('doctor')): ?>
+                        <div class="col-12 col-md-4 mb-4">
+                            <div class="card modern-stat-card h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="stat-label text-uppercase mb-2">
+                                            Total Patients
+                                        </div>
+                                        <div class="stat-value display-5 fw-bold">
+                                            <?php echo number_format($stats['total_patients']); ?>
+                                        </div>
                                     </div>
-                                    <div class="stat-value display-5 fw-bold">
-                                        <?php echo number_format($stats['total_patients']); ?>
+                                    <div class="stat-icon bg-gradient-primary">
+                                        <i class="fas fa-users fa-2x"></i>
                                     </div>
-                                </div>
-                                <div class="stat-icon bg-gradient-primary">
-                                    <i class="fas fa-users fa-2x"></i>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card modern-stat-card h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="stat-label text-uppercase mb-2">
-                                        Today's Appointments
+                        <div class="col-12 col-md-4 mb-4">
+                            <div class="card modern-stat-card h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="stat-label text-uppercase mb-2">
+                                            Today's Appointments
+                                        </div>
+                                        <div class="stat-value display-5 fw-bold">
+                                            <?php echo number_format($stats['today_appointments']); ?>
+                                        </div>
                                     </div>
-                                    <div class="stat-value display-5 fw-bold">
-                                        <?php echo number_format($stats['today_appointments']); ?>
+                                    <div class="stat-icon bg-gradient-success">
+                                        <i class="fas fa-calendar-day fa-2x"></i>
                                     </div>
-                                </div>
-                                <div class="stat-icon bg-gradient-success">
-                                    <i class="fas fa-calendar-day fa-2x"></i>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card modern-stat-card h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="stat-label text-uppercase mb-2">
-                                        Pending Appointments
+                        <div class="col-12 col-md-4 mb-4">
+                            <div class="card modern-stat-card h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="stat-label text-uppercase mb-2">
+                                            Pending Appointments
+                                        </div>
+                                        <div class="stat-value display-5 fw-bold">
+                                            <?php echo number_format($stats['pending_appointments']); ?>
+                                        </div>
                                     </div>
-                                    <div class="stat-value display-5 fw-bold">
-                                        <?php echo number_format($stats['pending_appointments']); ?>
+                                    <div class="stat-icon bg-gradient-warning">
+                                        <i class="fas fa-clock fa-2x"></i>
                                     </div>
-                                </div>
-                                <div class="stat-icon bg-gradient-warning">
-                                    <i class="fas fa-clock fa-2x"></i>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card modern-stat-card h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-                                <div>
-                                    <div class="stat-label text-uppercase mb-2">
-                                        Total Doctors
+                    <?php else: ?>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card modern-stat-card h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="stat-label text-uppercase mb-2">
+                                            Total Patients
+                                        </div>
+                                        <div class="stat-value display-5 fw-bold">
+                                            <?php echo number_format($stats['total_patients']); ?>
+                                        </div>
                                     </div>
-                                    <div class="stat-value display-5 fw-bold">
-                                        <?php echo number_format($stats['total_doctors']); ?>
+                                    <div class="stat-icon bg-gradient-primary">
+                                        <i class="fas fa-users fa-2x"></i>
                                     </div>
-                                </div>
-                                <div class="stat-icon bg-gradient-info">
-                                    <i class="fas fa-user-md fa-2x"></i>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card modern-stat-card h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="stat-label text-uppercase mb-2">
+                                            Today's Appointments
+                                        </div>
+                                        <div class="stat-value display-5 fw-bold">
+                                            <?php echo number_format($stats['today_appointments']); ?>
+                                        </div>
+                                    </div>
+                                    <div class="stat-icon bg-gradient-success">
+                                        <i class="fas fa-calendar-day fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card modern-stat-card h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="stat-label text-uppercase mb-2">
+                                            Pending Appointments
+                                        </div>
+                                        <div class="stat-value display-5 fw-bold">
+                                            <?php echo number_format($stats['pending_appointments']); ?>
+                                        </div>
+                                    </div>
+                                    <div class="stat-icon bg-gradient-warning">
+                                        <i class="fas fa-clock fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card modern-stat-card h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="stat-label text-uppercase mb-2">
+                                            Total Doctors
+                                        </div>
+                                        <div class="stat-value display-5 fw-bold">
+                                            <?php echo number_format($stats['total_doctors']); ?>
+                                        </div>
+                                    </div>
+                                    <div class="stat-icon bg-gradient-info">
+                                        <i class="fas fa-user-md fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="row">
@@ -254,31 +305,38 @@ try {
                                 </h6>
                             </div>
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-3 mb-3">
-                                        <a href="patients.php?action=add" class="btn btn-success w-100">
-                                            <i class="fas fa-user-plus"></i><br>
-                                            Add New Patient
-                                        </a>
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <a href="appointments.php?action=add" class="btn btn-primary w-100">
-                                            <i class="fas fa-calendar-plus"></i><br>
-                                            Schedule Appointment
-                                        </a>
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <a href="patients.php" class="btn btn-info w-100">
-                                            <i class="fas fa-search"></i><br>
-                                            Search Patients
-                                        </a>
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <a href="medical-history.php" class="btn btn-warning w-100">
-                                            <i class="fas fa-notes-medical"></i><br>
-                                            Medical Records
-                                        </a>
-                                    </div>
+                                <div class="row g-3">
+                                        <?php
+                                        $quickActions = [];
+                                        if (!hasRole('doctor')) {
+                                            $quickActions[] = [
+                                                'href' => 'patients.php?action=add',
+                                                'class' => 'btn-success',
+                                                'icon' => 'fa-user-plus',
+                                                'label' => 'Add New Patient'
+                                            ];
+                                            $quickActions[] = [
+                                                'href' => 'appointments.php?action=add',
+                                                'class' => 'btn-primary',
+                                                'icon' => 'fa-calendar-plus',
+                                                'label' => 'Schedule Appointment'
+                                            ];
+                                        }
+                                        $quickActions[] = [
+                                            'href' => 'patients.php',
+                                            'class' => 'btn-info',
+                                            'icon' => 'fa-search',
+                                            'label' => 'Search Patients'
+                                        ];
+                                        $colClass = 'col-12 col-md-' . (count($quickActions) > 0 ? intval(12 / count($quickActions)) : 12) . ' mb-3 mb-md-0';
+                                        foreach ($quickActions as $action): ?>
+                                            <div class="<?php echo $colClass; ?>">
+                                                <a href="<?php echo $action['href']; ?>" class="btn <?php echo $action['class']; ?> w-100 text-center d-flex flex-column align-items-center justify-content-center" style="height: 60px;">
+                                                    <i class="fas <?php echo $action['icon']; ?> fa-1x mb-2"></i>
+                                                    <span class="fs-7"><?php echo $action['label']; ?></span>
+                                                </a>
+                                            </div>
+                                        <?php endforeach; ?>
                                 </div>
                             </div>
                         </div>

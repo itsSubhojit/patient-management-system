@@ -43,7 +43,6 @@ CREATE TABLE patients (
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
--- Doctors table
 CREATE TABLE doctors (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT UNIQUE,
@@ -160,18 +159,11 @@ CREATE TABLE billing (
 INSERT INTO users (username, email, password, full_name, role, phone) VALUES
 ('admin', 'admin@hospital.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin', '+1234567890');
 
--- Insert sample doctor
-INSERT INTO users (username, email, password, full_name, role, phone, address) VALUES
-('dr.smith', 'dr.smith@hospital.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Dr. John Smith', 'doctor', '+1234567891', '123 Medical Street, City, State');
-
-INSERT INTO doctors (user_id, doctor_id, specialization, license_number, department, consultation_fee, available_days, available_time_start, available_time_end) VALUES
-(2, 'DOC001', 'General Medicine', 'MD12345', 'General Medicine', 100.00, '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]', '09:00:00', '17:00:00');
 
 -- Insert sample receptionist
 INSERT INTO users (username, email, password, full_name, role, phone) VALUES
 ('receptionist', 'reception@hospital.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jane Doe', 'receptionist', '+1234567892');
 
--- Create indexes for better performance
 CREATE INDEX idx_patients_patient_id ON patients(patient_id);
 CREATE INDEX idx_appointments_date ON appointments(appointment_date);
 CREATE INDEX idx_appointments_status ON appointments(status);

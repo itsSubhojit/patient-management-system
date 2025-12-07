@@ -8,6 +8,11 @@ $error = '';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Check if action is in POST data (from button submissions)
+    if (isset($_POST['action'])) {
+        $action = $_POST['action'];
+    }
+    
     if ($action == 'add') {
         // Add new appointment
         $patient_id = (int)$_POST['patient_id'];
@@ -21,18 +26,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $error = 'Please fill in all required fields';
         } else {
             try {
-                // Check for conflicting appointments
+                // Check for conflicting appointments for doctor
                 $stmt = $pdo->prepare("SELECT id FROM appointments WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND status != 'cancelled'");
                 $stmt->execute([$doctor_id, $appointment_date, $appointment_time]);
-                
-                if ($stmt->fetch()) {
+                $doctor_conflict = $stmt->fetch();
+
+                // Check for conflicting appointments for patient with same doctor/date/time
+                $stmt2 = $pdo->prepare("SELECT id FROM appointments WHERE patient_id = ? AND doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND status != 'cancelled'");
+                $stmt2->execute([$patient_id, $doctor_id, $appointment_date, $appointment_time]);
+                $patient_conflict = $stmt2->fetch();
+
+                if ($doctor_conflict) {
                     $error = 'This time slot is already booked for the selected doctor';
+                } elseif ($patient_conflict) {
+                    $error = 'This patient already has an appointment with this doctor at the selected date and time.';
                 } else {
                     $appointment_id = generateId('APT', 'appointments', 'appointment_id');
-                    
                     $stmt = $pdo->prepare("INSERT INTO appointments (appointment_id, patient_id, doctor_id, appointment_date, appointment_time, reason, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                     $stmt->execute([$appointment_id, $patient_id, $doctor_id, $appointment_date, $appointment_time, $reason, $notes, $_SESSION['user_id']]);
-                    
                     showAlert('Appointment scheduled successfully! Appointment ID: ' . $appointment_id, 'success');
                     redirect('appointments.php');
                 }
@@ -66,8 +77,21 @@ try {
 
 // Get patients for dropdown
 try {
-    $patients_stmt = $pdo->query("SELECT id, patient_id, first_name, last_name FROM patients ORDER BY first_name, last_name");
-    $patients = $patients_stmt->fetchAll();
+    if (hasRole('doctor')) {
+        // Only show patients who have confirmed appointments with this doctor
+        $doctor_user_id = $_SESSION['user_id'];
+        $stmt = $pdo->prepare("SELECT d.id FROM doctors d WHERE d.user_id = ?");
+        $stmt->execute([$doctor_user_id]);
+        $doctor_row = $stmt->fetch();
+        $doctor_id = $doctor_row ? $doctor_row['id'] : 0;
+        $patients_stmt = $pdo->prepare("SELECT DISTINCT p.id, p.patient_id, p.first_name, p.last_name FROM patients p JOIN appointments a ON a.patient_id = p.id WHERE a.doctor_id = ? AND a.status = 'confirmed' ORDER BY p.first_name, p.last_name");
+        $patients_stmt->execute([$doctor_id]);
+        $patients = $patients_stmt->fetchAll();
+    } else {
+        // Exclude patients who already have a non-cancelled appointment
+        $patients_stmt = $pdo->query("SELECT id, patient_id, first_name, last_name FROM patients WHERE id NOT IN (SELECT patient_id FROM appointments WHERE status != 'cancelled') ORDER BY first_name, last_name");
+        $patients = $patients_stmt->fetchAll();
+    }
 } catch (PDOException $e) {
     $patients = [];
 }
@@ -100,9 +124,25 @@ if ($date_filter) {
     $params[] = $date_filter;
 }
 
-if ($doctor_filter) {
+if (hasRole('doctor')) {
+    // Only show appointments for this doctor
+    $doctor_user_id = $_SESSION['user_id'];
+    $stmt = $pdo->prepare("SELECT d.id FROM doctors d WHERE d.user_id = ?");
+    $stmt->execute([$doctor_user_id]);
+    $doctor_row = $stmt->fetch();
+    $doctor_id = $doctor_row ? $doctor_row['id'] : 0;
+    $where_conditions[] = "a.doctor_id = ?";
+    $params[] = $doctor_id;
+    // If no explicit status filter, only show confirmed appointments for doctor
+    if (!$status_filter) {
+        $where_conditions[] = "a.status = 'confirmed'";
+    }
+} elseif ($doctor_filter) {
     $where_conditions[] = "a.doctor_id = ?";
     $params[] = $doctor_filter;
+    if (!$status_filter) {
+        $where_conditions[] = "a.status = 'confirmed'";
+    }
 }
 
 $where_clause = !empty($where_conditions) ? "WHERE " . implode(" AND ", $where_conditions) : "";
@@ -155,16 +195,15 @@ $selected_patient_id = $_GET['patient_id'] ?? '';
 </head>
 <body>
     <?php include 'includes/navbar.php'; ?>
-    
     <div class="container-fluid">
-        <div class="row">
-            <?php include 'includes/sidebar.php'; ?>
-            
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="dashboard-wrapper">
+            <main class="dashboard-main">
                 <?php if ($action == 'list'): ?>
                 <!-- Appointments List -->
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2"><i class="fas fa-calendar-alt"></i> Appointments Management</h1>
+                    <h1 class="dashboard-title display-6 fw-bold mb-0 d-flex align-items-center gap-2">
+                        Appointments Management
+                    </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <a href="appointments.php?action=add" class="btn btn-primary">
                             <i class="fas fa-calendar-plus"></i> Schedule Appointment
@@ -282,12 +321,22 @@ $selected_patient_id = $_GET['patient_id'] ?? '';
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
+                                                    <a href="appointments.php?action=view&id=<?php echo $appointment['id']; ?>" class="btn btn-info btn-action-icon" title="View Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
                                                     <?php if ($appointment['status'] == 'scheduled'): ?>
                                                         <form method="POST" class="d-inline">
                                                             <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                                             <input type="hidden" name="status" value="confirmed">
-                                                            <button type="submit" name="action" value="update_status" class="btn btn-success" title="Confirm">
+                                                            <button type="submit" name="action" value="update_status" class="btn btn-success btn-action-icon" title="Confirm" style="margin-right: 5px; border-radius: 0px;">
                                                                 <i class="fas fa-check"></i>
+                                                            </button>
+                                                        </form>
+                                                        <form method="POST" class="d-inline">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                            <input type="hidden" name="status" value="cancelled">
+                                                            <button type="submit" name="action" value="update_status" class="btn btn-danger btn-action-icon" title="Cancel" style="border-radius: 0 20px 20px 0;" onclick="return confirm('Are you sure you want to cancel this appointment?')">
+                                                                <i class="fas fa-times"></i>
                                                             </button>
                                                         </form>
                                                     <?php endif; ?>
@@ -295,23 +344,11 @@ $selected_patient_id = $_GET['patient_id'] ?? '';
                                                         <form method="POST" class="d-inline">
                                                             <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                                             <input type="hidden" name="status" value="completed">
-                                                            <button type="submit" name="action" value="update_status" class="btn btn-primary" title="Mark Complete">
+                                                            <button type="submit" name="action" value="update_status" class="btn btn-primary btn-action-icon" title="Mark Complete">
                                                                 <i class="fas fa-check-double"></i>
                                                             </button>
                                                         </form>
                                                     <?php endif; ?>
-                                                    <?php if (in_array($appointment['status'], ['scheduled', 'confirmed'])): ?>
-                                                        <form method="POST" class="d-inline">
-                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                            <input type="hidden" name="status" value="cancelled">
-                                                            <button type="submit" name="action" value="update_status" class="btn btn-danger" title="Cancel" onclick="return confirm('Are you sure you want to cancel this appointment?')">
-                                                                <i class="fas fa-times"></i>
-                                                            </button>
-                                                        </form>
-                                                    <?php endif; ?>
-                                                    <a href="appointments.php?action=view&id=<?php echo $appointment['id']; ?>" class="btn btn-info" title="View Details">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
                                                 </div>
                                             </td>
                                         </tr>
@@ -351,8 +388,8 @@ $selected_patient_id = $_GET['patient_id'] ?? '';
                 <?php elseif ($action == 'add'): ?>
                 <!-- Schedule Appointment Form -->
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">
-                        <i class="fas fa-calendar-plus"></i> Schedule New Appointment
+                    <h1 class="dashboard-title display-6 fw-bold mb-0 d-flex align-items-center gap-2">
+                        Schedule New Appointment
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <a href="appointments.php" class="btn btn-secondary">
@@ -446,7 +483,38 @@ $selected_patient_id = $_GET['patient_id'] ?? '';
                         </form>
                     </div>
                 </div>
-                <?php endif; ?>
+                <?php elseif ($action == 'view' && isset($_GET['id'])): ?>
+<?php
+    $view_id = (int)$_GET['id'];
+    $stmt = $pdo->prepare("SELECT a.*, p.patient_id, p.first_name, p.last_name, p.phone, d.doctor_id, u.full_name as doctor_name, d.specialization FROM appointments a JOIN patients p ON a.patient_id = p.id JOIN doctors d ON a.doctor_id = d.id JOIN users u ON d.user_id = u.id WHERE a.id = ?");
+    $stmt->execute([$view_id]);
+    $appointment = $stmt->fetch();
+?>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="dashboard-title display-6 fw-bold mb-0 d-flex align-items-center gap-2">
+        Appointment Details
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="appointments.php" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+<?php if ($appointment): ?>
+<div class="card mb-4">
+    <div class="card-body">
+        <h5><strong>Appointment ID:</strong> <?php echo htmlspecialchars($appointment['appointment_id']); ?></h5>
+        <p><strong>Patient:</strong> <?php echo htmlspecialchars($appointment['first_name'] . ' ' . $appointment['last_name'] . ' (' . $appointment['patient_id'] . ')'); ?></p>
+        <p><strong>Doctor:</strong> <?php echo htmlspecialchars($appointment['doctor_name'] . ' - ' . $appointment['specialization']); ?></p>
+        <p><strong>Date:</strong> <?php echo formatDate($appointment['appointment_date']); ?></p>
+        <p><strong>Time:</strong> <?php echo date('g:i A', strtotime($appointment['appointment_time'])); ?></p>
+        <p><strong>Status:</strong> <span class="badge bg-<?php echo getAppointmentStatusColor($appointment['status']); ?>"><?php echo ucfirst($appointment['status']); ?></span></p>
+    </div>
+</div>
+<?php else: ?>
+<div class="alert alert-danger">Appointment not found.</div>
+<?php endif; ?>
+<?php endif; ?>
             </main>
         </div>
     </div>
