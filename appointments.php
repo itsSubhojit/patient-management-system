@@ -64,6 +64,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } catch (PDOException $e) {
             $error = 'Error updating appointment status: ' . $e->getMessage();
         }
+    } elseif ($action == 'complete_with_diagnosis' && isset($_POST['appointment_id'])) {
+        $appointment_id = (int)$_POST['appointment_id'];
+        $chief_complaint = sanitize($_POST['chief_complaint']);
+        $diagnosis = sanitize($_POST['diagnosis']);
+        $prescribed_medications = sanitize($_POST['prescribed_medications']);
+        $treatment = sanitize($_POST['treatment']);
+        $follow_up_notes = sanitize($_POST['follow_up_notes']);
+        $next_appointment_date = !empty($_POST['next_appointment_date']) ? sanitize($_POST['next_appointment_date']) : null;
+        try {
+            // Get appointment details
+            $stmt = $pdo->prepare("SELECT patient_id, doctor_id, appointment_date FROM appointments WHERE id = ?");
+            $stmt->execute([$appointment_id]);
+            $appointment = $stmt->fetch();
+            if ($appointment) {
+                // Insert into medical history (with next appointment date)
+                $stmt = $pdo->prepare("INSERT INTO medical_history (patient_id, doctor_id, visit_date, chief_complaint, diagnosis, treatment, prescribed_medications, follow_up_date, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+                $stmt->execute([
+                    $appointment['patient_id'],
+                    $appointment['doctor_id'],
+                    $appointment['appointment_date'],
+                    $chief_complaint,
+                    $diagnosis,
+                    $treatment,
+                    $prescribed_medications,
+                    $next_appointment_date,
+                    $follow_up_notes
+                ]);
+                // Update appointment status to completed
+                $stmt = $pdo->prepare("UPDATE appointments SET status = 'completed', updated_at = NOW() WHERE id = ?");
+                $stmt->execute([$appointment_id]);
+                showAlert('Appointment completed and medical history recorded successfully!', 'success');
+            } else {
+                $error = 'Appointment not found.';
+            }
+            redirect('appointments.php');
+        } catch (PDOException $e) {
+            $error = 'Error completing appointment: ' . $e->getMessage();
+        }
     }
 }
 
@@ -78,18 +116,11 @@ try {
 // Get patients for dropdown
 try {
     if (hasRole('doctor')) {
-        // Only show patients who have confirmed appointments with this doctor
-        $doctor_user_id = $_SESSION['user_id'];
-        $stmt = $pdo->prepare("SELECT d.id FROM doctors d WHERE d.user_id = ?");
-        $stmt->execute([$doctor_user_id]);
-        $doctor_row = $stmt->fetch();
-        $doctor_id = $doctor_row ? $doctor_row['id'] : 0;
-        $patients_stmt = $pdo->prepare("SELECT DISTINCT p.id, p.patient_id, p.first_name, p.last_name FROM patients p JOIN appointments a ON a.patient_id = p.id WHERE a.doctor_id = ? AND a.status = 'confirmed' ORDER BY p.first_name, p.last_name");
-        $patients_stmt->execute([$doctor_id]);
-        $patients = $patients_stmt->fetchAll();
+        // Doctors should not schedule appointments (for now)
+        $patients = [];
     } else {
-        // Exclude patients who already have a non-cancelled appointment
-        $patients_stmt = $pdo->query("SELECT id, patient_id, first_name, last_name FROM patients WHERE id NOT IN (SELECT patient_id FROM appointments WHERE status != 'cancelled') ORDER BY first_name, last_name");
+        // For admin and other roles, show all patients
+        $patients_stmt = $pdo->query("SELECT id, patient_id, first_name, last_name FROM patients ORDER BY first_name, last_name");
         $patients = $patients_stmt->fetchAll();
     }
 } catch (PDOException $e) {
@@ -341,13 +372,9 @@ $selected_patient_id = $_GET['patient_id'] ?? '';
                                                         </form>
                                                     <?php endif; ?>
                                                     <?php if ($appointment['status'] == 'confirmed'): ?>
-                                                        <form method="POST" class="d-inline">
-                                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                            <input type="hidden" name="status" value="completed">
-                                                            <button type="submit" name="action" value="update_status" class="btn btn-primary btn-action-icon" title="Mark Complete">
-                                                                <i class="fas fa-check-double"></i>
-                                                            </button>
-                                                        </form>
+                                                        <button type="button" class="btn btn-primary btn-action-icon" title="Complete with Diagnosis" data-bs-toggle="modal" data-bs-target="#diagnosisModal<?php echo $appointment['id']; ?>">
+                                                            <i class="fas fa-check-double"></i>
+                                                        </button>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
@@ -518,6 +545,75 @@ $selected_patient_id = $_GET['patient_id'] ?? '';
             </main>
         </div>
     </div>
+
+    <!-- Diagnosis Modals (Outside main container) -->
+    <?php if ($action == 'list' && !empty($appointments)): ?>
+        <?php foreach ($appointments as $appointment): ?>
+        <?php if ($appointment['status'] == 'confirmed'): ?>
+        <div class="modal fade" id="diagnosisModal<?php echo $appointment['id']; ?>" tabindex="-1" aria-labelledby="diagnosisModalLabel<?php echo $appointment['id']; ?>" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="diagnosisModalLabel<?php echo $appointment['id']; ?>">
+                            <i class="fas fa-notes-medical"></i> Complete Appointment & Add Diagnosis
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="POST">
+                        <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                            <input type="hidden" name="action" value="complete_with_diagnosis">
+                            
+                            <div class="alert alert-info mb-3">
+                                <strong><i class="fas fa-user"></i> Patient:</strong> <?php echo htmlspecialchars($appointment['first_name'] . ' ' . $appointment['last_name']); ?> (<?php echo htmlspecialchars($appointment['patient_id']); ?>)<br>
+                                <strong><i class="fas fa-calendar"></i> Date & Time:</strong> <?php echo formatDate($appointment['appointment_date']) . ' at ' . date('g:i A', strtotime($appointment['appointment_time'])); ?>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="chief_complaint<?php echo $appointment['id']; ?>" class="form-label"><strong>Chief Complaint</strong></label>
+                                <textarea class="form-control" id="chief_complaint<?php echo $appointment['id']; ?>" name="chief_complaint" rows="2" placeholder="What is the patient's main complaint or reason for visit?"></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="diagnosis<?php echo $appointment['id']; ?>" class="form-label"><strong>Diagnosis *</strong></label>
+                                <textarea class="form-control" id="diagnosis<?php echo $appointment['id']; ?>" name="diagnosis" rows="2" required placeholder="Enter your diagnosis..."></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="prescribed_medications<?php echo $appointment['id']; ?>" class="form-label"><strong>Prescribed Medications</strong></label>
+                                <textarea class="form-control" id="prescribed_medications<?php echo $appointment['id']; ?>" name="prescribed_medications" rows="2" placeholder="List medications with dosage and frequency..."></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="treatment<?php echo $appointment['id']; ?>" class="form-label"><strong>Treatment Plan</strong></label>
+                                <textarea class="form-control" id="treatment<?php echo $appointment['id']; ?>" name="treatment" rows="2" placeholder="Describe the treatment plan and recommendations..."></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="next_appointment_date<?php echo $appointment['id']; ?>" class="form-label"><strong>Next Appointment Date</strong></label>
+                                <input type="date" class="form-control" id="next_appointment_date<?php echo $appointment['id']; ?>" name="next_appointment_date">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="follow_up_notes<?php echo $appointment['id']; ?>" class="form-label"><strong>Follow-up Notes</strong></label>
+                                <textarea class="form-control" id="follow_up_notes<?php echo $appointment['id']; ?>" name="follow_up_notes" rows="2" placeholder="Any follow-up instructions or additional notes..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check-circle"></i> Complete & Save to History
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        <?php endforeach; ?>
+    <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>

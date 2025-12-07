@@ -204,95 +204,137 @@ try {
                 </div>
 
                 <div class="row">
-                    <!-- Recent Appointments -->
-                    <div class="col-lg-6 mb-4">
-                        <div class="card shadow">
-                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                <h6 class="m-0 font-weight-bold text-primary">
-                                    <i class="fas fa-calendar-alt"></i> Recent Appointments
-                                </h6>
-                                <a href="appointments.php" class="btn btn-sm btn-primary">View All</a>
-                            </div>
-                            <div class="card-body">
-                                <?php if (empty($recent_appointments)): ?>
-                                    <p class="text-muted">No appointments found.</p>
-                                <?php else: ?>
-                                    <div class="table-responsive scrollable-table">
-                                        <table class="table table-bordered">
-                                            <thead>
-                                                <tr>
-                                                    <th>Patient</th>
-                                                    <th>Doctor</th>
-                                                    <th>Date</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach ($recent_appointments as $appointment): ?>
-                                                <tr>
-                                                    <td>
-                                                        <strong><?php echo htmlspecialchars($appointment['first_name'] . ' ' . $appointment['last_name']); ?></strong><br>
-                                                        <small class="text-muted"><?php echo htmlspecialchars($appointment['patient_id']); ?></small>
-                                                    </td>
-                                                    <td><?php echo htmlspecialchars($appointment['doctor_name']); ?></td>
-                                                    <td>
-                                                        <?php echo formatDate($appointment['appointment_date']); ?><br>
-                                                        <small class="text-muted"><?php echo date('g:i A', strtotime($appointment['appointment_time'])); ?></small>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-<?php echo getStatusColor($appointment['status']); ?>">
-                                                            <?php echo ucfirst($appointment['status']); ?>
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Patients -->
-                    <div class="col-lg-6 mb-4">
-                        <div class="card shadow">
-                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                <h6 class="m-0 font-weight-bold text-primary">
-                                    <i class="fas fa-users"></i> Recent Patients
-                                </h6>
-                                <a href="patients.php" class="btn btn-sm btn-primary">View All</a>
-                            </div>
-                            <div class="card-body">
-                                <?php if (empty($recent_patients)): ?>
-                                    <p class="text-muted">No patients found.</p>
-                                <?php else: ?>
-                                    <div class="table-responsive scrollable-table">
-                                        <table class="table table-bordered">
-                                            <thead>
-                                                <tr>
-                                                    <th>Patient ID</th>
-                                                    <th>Name</th>
-                                                    <th>Phone</th>
-                                                    <th>Registered</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach ($recent_patients as $patient): ?>
-                                                <tr>
-                                                    <td><?php echo htmlspecialchars($patient['patient_id']); ?></td>
-                                                    <td><?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?></td>
-                                                    <td><?php echo htmlspecialchars($patient['phone']); ?></td>
-                                                    <td><?php echo formatDate($patient['created_at']); ?></td>
-                                                </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                <?php endif; ?>
+                    <?php $showRecentAppointments = !hasRole('doctor'); ?>
+                    <?php if ($showRecentAppointments): ?>
+                        <!-- Recent Appointments -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="card shadow">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">
+                                        <i class="fas fa-calendar-alt"></i> Recent Appointments
+                                    </h6>
+                                    <a href="appointments.php" class="btn btn-sm btn-primary">View All</a>
+                                </div>
+                                <div class="card-body">
+                                    <?php if (empty($recent_appointments)): ?>
+                                        <p class="text-muted">No appointments found.</p>
+                                    <?php else: ?>
+                                        <div class="table-responsive scrollable-table">
+                                            <table class="table table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Patient</th>
+                                                        <th>Doctor</th>
+                                                        <th>Date</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($recent_appointments as $appointment): ?>
+                                                    <tr>
+                                                        <td>
+                                                            <strong><?php echo htmlspecialchars($appointment['first_name'] . ' ' . $appointment['last_name']); ?></strong><br>
+                                                            <small class="text-muted"><?php echo htmlspecialchars($appointment['patient_id']); ?></small>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($appointment['doctor_name']); ?></td>
+                                                        <td>
+                                                            <?php echo formatDate($appointment['appointment_date']); ?><br>
+                                                            <small class="text-muted"><?php echo date('g:i A', strtotime($appointment['appointment_time'])); ?></small>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-<?php echo getStatusColor($appointment['status']); ?>">
+                                                                <?php echo ucfirst($appointment['status']); ?>
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                        <!-- Recent Patients -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="card shadow">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">
+                                        <i class="fas fa-users"></i> Recent Patients
+                                    </h6>
+                                    <a href="patients.php" class="btn btn-sm btn-primary">View All</a>
+                                </div>
+                                <div class="card-body">
+                                    <?php if (empty($recent_patients)): ?>
+                                        <p class="text-muted">No patients found.</p>
+                                    <?php else: ?>
+                                        <div class="table-responsive scrollable-table">
+                                            <table class="table table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Patient ID</th>
+                                                        <th>Name</th>
+                                                        <th>Phone</th>
+                                                        <th>Registered</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($recent_patients as $patient): ?>
+                                                    <tr>
+                                                        <td><?php echo htmlspecialchars($patient['patient_id']); ?></td>
+                                                        <td><?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?></td>
+                                                        <td><?php echo htmlspecialchars($patient['phone']); ?></td>
+                                                        <td><?php echo formatDate($patient['created_at']); ?></td>
+                                                    </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <!-- Recent Patients full width for doctors -->
+                        <div class="col-lg-12 mb-4">
+                            <div class="card shadow">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">
+                                        <i class="fas fa-users"></i> Recent Patients
+                                    </h6>
+                                    <a href="patients.php" class="btn btn-sm btn-primary">View All</a>
+                                </div>
+                                <div class="card-body">
+                                    <?php if (empty($recent_patients)): ?>
+                                        <p class="text-muted">No patients found.</p>
+                                    <?php else: ?>
+                                        <div class="table-responsive scrollable-table">
+                                            <table class="table table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Patient ID</th>
+                                                        <th>Name</th>
+                                                        <th>Phone</th>
+                                                        <th>Registered</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($recent_patients as $patient): ?>
+                                                    <tr>
+                                                        <td><?php echo htmlspecialchars($patient['patient_id']); ?></td>
+                                                        <td><?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?></td>
+                                                        <td><?php echo htmlspecialchars($patient['phone']); ?></td>
+                                                        <td><?php echo formatDate($patient['created_at']); ?></td>
+                                                    </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Quick Actions -->
