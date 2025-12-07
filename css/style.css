@@ -325,10 +325,11 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 
 /* Dashboard Cards */
 .card {
-    border: none;
-    border-radius: 10px;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    transition: all 0.3s ease;
+    border: none !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08) !important;
+    background: #f9fbfd !important;
+    transition: all 0.3s cubic-bezier(.4,2,.6,1) !important;
 }
 
 .card:hover {
@@ -337,14 +338,49 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 }
 
 .card-header {
-    background-color: white;
-    border-bottom: 1px solid var(--border-color);
-    padding: 1.25rem;
+    background: #f4f7fa !important;
+    border-bottom: 1px solid #e9ecef !important;
+    border-radius: 16px 16px 0 0 !important;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+    padding: 1.25rem 1.5rem !important;
 }
 
 .card-header h5, .card-header h6 {
     margin: 0;
     font-weight: 600;
+}
+
+.card-body {
+    padding: 2rem 1.5rem !important;
+    background: #f9fbfd !important;
+    border-radius: 0 0 16px 16px !important;
+}
+
+/* Patient details styling */
+.card-body {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+.card-body p {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+}
+.card-body h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+.card-body strong {
+    font-weight: 600;
+    color: #222;
+}
+.card-body .badge {
+    font-size: 0.9rem;
+    padding: 0.35em 0.65em;
+}
+.card-body hr {
+    margin: 1.25rem 0;
 }
 
 /* Border Cards */
@@ -403,18 +439,25 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 
 /* Tables */
 .table {
-    background-color: white;
+    background-color: #fff !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
 }
 
 .table th {
-    border-top: none;
-    font-weight: 600;
-    color: var(--dark-color);
-    background-color: var(--light-color);
+    border-top: none !important;
+    font-weight: 700 !important;
+    color: #222 !important;
+    background-color: #f4f7fa !important;
+    font-size: 1.05rem !important;
+    letter-spacing: 0.03em !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
 }
 
 .table-hover tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.05);
+    background-color: #eaf4ff !important;
 }
 
 /* Buttons */
@@ -423,11 +466,58 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
     font-weight: 500;
     padding: 8px 16px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    border: none;
 }
 
 .btn-sm {
-    padding: 4px 12px;
-    font-size: 0.875rem;
+    padding: 6px 10px;
+    font-size: 1rem;
+    min-width: 38px;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-info:hover {
+    background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%);
+    color: #fff;
+}
+.btn-warning {
+    background: linear-gradient(135deg, #ffb347 0%, #ffcc33 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 2px 8px rgba(255,179,71,0.10);
+}
+.btn-warning:hover {
+    background: linear-gradient(135deg, #ffcc33 0%, #ffb347 100%);
+    color: #fff;
+}
+.btn-success {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 2px 8px rgba(67,233,123,0.10);
+}
+.btn-success:hover {
+    background: linear-gradient(135deg, #38f9d7 0%, #43e97b 100%);
+    color: #fff;
+}
+.btn-action-icon {
+    border-radius: 50%;
+    padding: 0;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-right: 6px;
+    margin-left: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.btn-action-icon:last-child {
+    margin-right: 0;
 }
 
 .btn:hover {
@@ -916,15 +1006,13 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 
 /* Dashboard Styles */
 .dashboard-wrapper {
-    background: transparent;
-    background-size: cover;
-    min-height: 90vh;
-    padding-top: 0px;
-    padding-bottom: 40px;
+    background: linear-gradient(120deg, #f8fafc 60%, #eaf4ff 100%);
+    padding: 32px 0;
+    min-height: 100vh;
 }
 
 .dashboard-main {
-    padding: 25px 0;
+    padding: 0 12px;
 }
 
 .dashboard-main .card {
@@ -957,10 +1045,12 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 }
 
 .dashboard-title {
-    color: #222;
-    text-shadow: 0 2px 8px rgba(255,255,255,0.5);
-    letter-spacing: 1px;
-    margin-bottom: 0;
+    color: #222 !important;
+    text-shadow: 0 2px 8px rgba(255,255,255,0.5) !important;
+    letter-spacing: -0.5px !important;
+    margin-bottom: 0 !important;
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
 }
 
 /* Modern Stat Cards */
@@ -1033,4 +1123,114 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 .scrollable-table {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+/* Modern Patient Management Enhancements */
+.dashboard-wrapper {
+    padding: 32px 0 32px 0;
+    background: linear-gradient(120deg, #f8fafc 60%, #eaf4ff 100%);
+    min-height: 100vh;
+}
+.dashboard-main {
+    padding: 0 12px;
+}
+.card {
+    border-radius: 18px !important;
+    box-shadow: 0 6px 32px rgba(0,0,0,0.10) !important;
+    background: #f9fbfd !important;
+    border: none !important;
+}
+.card-header {
+    background: #f4f7fa !important;
+    border-bottom: 1px solid #e9ecef !important;
+    border-radius: 18px 18px 0 0 !important;
+    font-weight: 700 !important;
+    font-size: 1.15rem !important;
+    padding: 1.25rem 2rem !important;
+}
+.card-body {
+    padding: 2.5rem 2rem !important;
+    background: #f9fbfd !important;
+    border-radius: 0 0 18px 18px !important;
+}
+.table {
+    background-color: #fff !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+}
+.table th {
+    border-top: none !important;
+    font-weight: 700 !important;
+    color: #222 !important;
+    background-color: #f4f7fa !important;
+    font-size: 1.05rem !important;
+    letter-spacing: 0.03em !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+}
+.table-hover tbody tr:hover {
+    background-color: #eaf4ff !important;
+}
+.dashboard-title {
+    color: #222 !important;
+    text-shadow: 0 2px 8px rgba(255,255,255,0.5) !important;
+    letter-spacing: -0.5px !important;
+    margin-bottom: 0 !important;
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+}
+.btn-toolbar {
+    gap: 0.5rem;
+}
+
+/* Modern Patient Details Card */
+.patient-details-card {
+    background: #f9fbfd;
+    border-radius: 18px;
+    box-shadow: 0 6px 32px rgba(0,0,0,0.10);
+    border: 1px solid #f0f1f6;
+    padding: 2.5rem 2rem 2rem 2rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 900px) {
+    .patient-details-card {
+        padding: 1.5rem 0.5rem;
+    }
+}
+
+.patient-details-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+}
+
+.patient-details-col {
+    flex: 1 1 350px;
+    min-width: 280px;
+}
+
+.patient-details-card hr {
+    margin: 1.5rem 0;
+    border-top: 1px solid #e0e6ed;
+}
+
+.patient-details-card p, .patient-details-card h5 {
+    margin-bottom: 0.7rem;
+}
+
+.patient-details-card .badge {
+    font-size: 0.85rem;
+    padding: 0.35em 0.7em;
+    border-radius: 8px;
+}
+
+.patient-details-label {
+    font-weight: 600;
+    color: #222;
+}
+
+.patient-details-value {
+    color: #444;
 }

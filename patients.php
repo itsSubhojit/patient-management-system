@@ -5,10 +5,34 @@ requireLogin();
 $action = $_GET['action'] ?? 'list';
 $success = '';
 $error = '';
+$view_patient = null;
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if ($action == 'add') {
+    if (isset($_POST['bulk_delete'])) {
+        // Bulk delete selected patients
+        if (!empty($_POST['selected_patients'])) {
+            $ids = array_map('intval', $_POST['selected_patients']);
+            if (!empty($ids)) {
+                $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                try {
+                    // First delete all appointments associated with these patients
+                    $stmt = $pdo->prepare("DELETE FROM appointments WHERE patient_id IN ($placeholders)");
+                    $stmt->execute($ids);
+                    
+                    // Then delete the patients
+                    $stmt = $pdo->prepare("DELETE FROM patients WHERE id IN ($placeholders)");
+                    $stmt->execute($ids);
+                    showAlert(count($ids) . ' patient(s) and their appointments deleted successfully!', 'success');
+                    redirect('patients.php');
+                } catch (PDOException $e) {
+                    $error = 'Error deleting patients: ' . $e->getMessage();
+                }
+            }
+        } else {
+            $error = 'Please select at least one patient to delete.';
+        }
+    } elseif ($action == 'add') {
         // Add new patient
         $first_name = sanitize($_POST['first_name']);
         $last_name = sanitize($_POST['last_name']);
@@ -72,20 +96,60 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $error = 'Error updating patient: ' . $e->getMessage();
             }
         }
+    } elseif (isset($_POST['delete_patient']) && $action == 'delete' && isset($_GET['id'])) {
+        // Delete patient
+        $patient_id = (int)$_GET['id'];
+        try {
+            $stmt = $pdo->prepare("DELETE FROM patients WHERE id = ?");
+            $stmt->execute([$patient_id]);
+            
+            showAlert('Patient deleted successfully!', 'success');
+            redirect('patients.php');
+        } catch (PDOException $e) {
+            $error = 'Error deleting patient: ' . $e->getMessage();
+        }
     }
 }
 
 // Get patient data for editing
-if ($action == 'edit' && isset($_GET['id'])) {
+if (($action == 'edit' || $action == 'view') && isset($_GET['id'])) {
     $patient_id = (int)$_GET['id'];
     try {
         $stmt = $pdo->prepare("SELECT * FROM patients WHERE id = ?");
         $stmt->execute([$patient_id]);
         $patient = $stmt->fetch();
-        
         if (!$patient) {
             showAlert('Patient not found', 'error');
             redirect('patients.php');
+        }
+        if ($action == 'view') {
+            $view_patient = $patient;
+            // Appointment summary for details view
+            $appt_stats = [
+                'total' => 0,
+                'scheduled' => 0,
+                'last' => null,
+                'next' => null
+            ];
+            try {
+                // Total appointments
+                $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM appointments WHERE patient_id = ?");
+                $stmt->execute([$patient_id]);
+                $appt_stats['total'] = $stmt->fetch()['total'];
+                // Scheduled appointments
+                $stmt = $pdo->prepare("SELECT COUNT(*) as scheduled FROM appointments WHERE patient_id = ? AND status = 'scheduled'");
+                $stmt->execute([$patient_id]);
+                $appt_stats['scheduled'] = $stmt->fetch()['scheduled'];
+                // Last appointment
+                $stmt = $pdo->prepare("SELECT * FROM appointments WHERE patient_id = ? ORDER BY appointment_date DESC, appointment_time DESC LIMIT 1");
+                $stmt->execute([$patient_id]);
+                $appt_stats['last'] = $stmt->fetch();
+                // Next appointment
+                $stmt = $pdo->prepare("SELECT * FROM appointments WHERE patient_id = ? AND appointment_date >= CURDATE() AND status = 'scheduled' ORDER BY appointment_date ASC, appointment_time ASC LIMIT 1");
+                $stmt->execute([$patient_id]);
+                $appt_stats['next'] = $stmt->fetch();
+            } catch (PDOException $e) {}
+            $view_patient['appt_stats'] = $appt_stats;
         }
     } catch (PDOException $e) {
         showAlert('Error fetching patient data', 'error');
@@ -143,18 +207,21 @@ try {
     <?php include 'includes/navbar.php'; ?>
     
     <div class="container-fluid">
-        <div class="row">
-            <?php include 'includes/sidebar.php'; ?>
-            
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="dashboard-wrapper">
+            <main class="dashboard-main">
                 <?php if ($action == 'list'): ?>
                 <!-- Patients List -->
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2"><i class="fas fa-users"></i> Patients Management</h1>
+                    <h1 class="dashboard-title display-6 fw-bold mb-0 d-flex align-items-center gap-2">
+                        Patients Management
+                    </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <a href="patients.php?action=add" class="btn btn-primary">
                             <i class="fas fa-user-plus"></i> Add New Patient
                         </a>
+                        <button type="button" class="btn btn-danger" style="background-color:#e53935; border:none; font-weight:bold; margin-left:8px;" onclick="deleteSelectedPatients()">
+                            <i class="fas fa-trash"></i> Delete Patient
+                        </button>
                     </div>
                 </div>
 
@@ -198,26 +265,32 @@ try {
                                 <?php endif; ?>
                             </div>
                         <?php else: ?>
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Patient ID</th>
-                                            <th>Name</th>
-                                            <th>Age/Gender</th>
-                                            <th>Phone</th>
-                                            <th>Email</th>
-                                            <th>Blood Type</th>
-                                            <th>Registered</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($patients as $patient): ?>
-                                        <tr>
-                                            <td>
-                                                <strong><?php echo htmlspecialchars($patient['patient_id']); ?></strong>
-                                            </td>
+                            <form method="POST" id="patientsTableForm" action="patients.php">
+                                <input type="hidden" name="bulk_delete" value="1">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                                                <th>Patient ID</th>
+                                                <th>Name</th>
+                                                <th>Age/Gender</th>
+                                                <th>Phone</th>
+                                                <th>Email</th>
+                                                <th>Blood Type</th>
+                                                <th>Registered</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($patients as $patient): ?>
+                                            <tr>
+                                                <td>
+                                                    <input type="checkbox" name="selected_patients[]" value="<?php echo $patient['id']; ?>">
+                                                </td>
+                                                <td>
+                                                    <strong><?php echo htmlspecialchars($patient['patient_id']); ?></strong>
+                                                </td>
                                             <td>
                                                 <strong><?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?></strong>
                                                 <?php if ($patient['allergies']): ?>
@@ -242,21 +315,23 @@ try {
                                             <td><?php echo formatDate($patient['created_at']); ?></td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    <a href="patients.php?action=view&id=<?php echo $patient['id']; ?>" class="btn btn-info" title="View Details">
+                                                    <a href="patients.php?action=view&id=<?php echo $patient['id']; ?>" class="btn btn-info btn-action-icon" title="View Details">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <a href="patients.php?action=edit&id=<?php echo $patient['id']; ?>" class="btn btn-warning" title="Edit">
+                                                    <a href="patients.php?action=edit&id=<?php echo $patient['id']; ?>" class="btn btn-warning btn-action-icon" title="Edit">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
-                                                    <a href="appointments.php?action=add&patient_id=<?php echo $patient['id']; ?>" class="btn btn-success" title="Schedule Appointment">
+                                                    <a href="appointments.php?action=add&patient_id=<?php echo $patient['id']; ?>" class="btn btn-success btn-action-icon" title="Schedule Appointment">
                                                         <i class="fas fa-calendar-plus"></i>
                                                     </a>
                                                 </div>
                                             </td>
                                         </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </form>
                             </div>
 
                             <!-- Pagination -->
@@ -287,11 +362,69 @@ try {
                     </div>
                 </div>
 
+                <?php elseif ($action == 'view' && $view_patient): ?>
+                <!-- View Patient Details -->
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2 fw-bold mb-0">
+                        Patient Details
+                    </h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <a href="patients.php" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card shadow">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h5><i class="fas fa-id-badge"></i> <?php echo htmlspecialchars($view_patient['patient_id']); ?></h5>
+                                <p><strong>Name:</strong> <?php echo htmlspecialchars($view_patient['first_name'] . ' ' . $view_patient['last_name']); ?></p>
+                                <p><strong>Date of Birth:</strong> <?php echo htmlspecialchars($view_patient['date_of_birth']); ?></p>
+                                <p><strong>Gender:</strong> <?php echo htmlspecialchars($view_patient['gender']); ?></p>
+                                <p><strong>Phone:</strong> <?php echo htmlspecialchars($view_patient['phone']); ?></p>
+                                <p><strong>Email:</strong> <?php echo htmlspecialchars($view_patient['email']); ?></p>
+                                <p><strong>Address:</strong> <?php echo htmlspecialchars($view_patient['address']); ?></p>
+                                <hr>
+                                <p><strong>Total Appointments:</strong> <?php echo (int)($view_patient['appt_stats']['total'] ?? 0); ?></p>
+                                <p><strong>Currently Scheduled:</strong> <?php echo (int)($view_patient['appt_stats']['scheduled'] ?? 0); ?> 
+                                    <?php echo ((int)($view_patient['appt_stats']['scheduled'] ?? 0) > 0) ? '<span class="badge bg-success">Scheduled</span>' : '<span class="badge bg-secondary">Not Scheduled</span>'; ?>
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <p><strong>Blood Type:</strong> <?php echo htmlspecialchars($view_patient['blood_type'] ?: '-'); ?></p>
+                                <p><strong>Allergies:</strong> <?php echo htmlspecialchars($view_patient['allergies'] ?: '-'); ?></p>
+                                <p><strong>Emergency Contact:</strong> <?php echo htmlspecialchars($view_patient['emergency_contact_name'] ?: '-'); ?> (<?php echo htmlspecialchars($view_patient['emergency_contact_phone'] ?: '-'); ?>)</p>
+                                <p><strong>Insurance Provider:</strong> <?php echo htmlspecialchars($view_patient['insurance_provider'] ?: '-'); ?></p>
+                                <p><strong>Insurance Number:</strong> <?php echo htmlspecialchars($view_patient['insurance_number'] ?: '-'); ?></p>
+                                <p><strong>Registered:</strong> <?php echo formatDate($view_patient['created_at']); ?></p>
+                                <hr>
+                                <p><strong>Last Appointment:</strong><br>
+                                    <?php if (!empty($view_patient['appt_stats']['last'])): ?>
+                                        <?php echo formatDate($view_patient['appt_stats']['last']['appointment_date']); ?>
+                                        at <?php echo date('g:i A', strtotime($view_patient['appt_stats']['last']['appointment_time'])); ?>
+                                        (<?php echo ucfirst($view_patient['appt_stats']['last']['status']); ?>)
+                                    <?php else: ?>
+                                        <span class="text-muted">No previous appointments</span>
+                                    <?php endif; ?>
+                                </p>
+                                <p><strong>Next Appointment:</strong><br>
+                                    <?php if (!empty($view_patient['appt_stats']['next'])): ?>
+                                        <?php echo formatDate($view_patient['appt_stats']['next']['appointment_date']); ?>
+                                        at <?php echo date('g:i A', strtotime($view_patient['appt_stats']['next']['appointment_time'])); ?>
+                                        (<?php echo ucfirst($view_patient['appt_stats']['next']['status']); ?>)
+                                    <?php else: ?>
+                                        <span class="text-muted">No upcoming scheduled appointment</span>
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <?php elseif ($action == 'add' || $action == 'edit'): ?>
                 <!-- Add/Edit Patient Form -->
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">
-                        <i class="fas fa-<?php echo $action == 'add' ? 'user-plus' : 'user-edit'; ?>"></i> 
+                    <h1 class="h2 fw-bold mb-0">
                         <?php echo $action == 'add' ? 'Add New Patient' : 'Edit Patient'; ?>
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
@@ -438,5 +571,24 @@ try {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSelectAll(source) {
+            const checkboxes = document.querySelectorAll('input[name="selected_patients[]"]');
+            for (let i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = source.checked;
+            }
+        }
+
+        function deleteSelectedPatients() {
+            const checkboxes = document.querySelectorAll('input[name="selected_patients[]"]:checked');
+            if (checkboxes.length === 0) {
+                alert('Please select at least one patient to delete.');
+                return false;
+            }
+            if (confirm('Are you sure you want to delete the selected patient(s)? This action cannot be undone.')) {
+                document.getElementById('patientsTableForm').submit();
+            }
+        }
+    </script>
 </body>
 </html>

@@ -45,11 +45,18 @@ function hasRole($role) {
 
 function generateId($prefix, $table, $column) {
     global $pdo;
-    $stmt = $pdo->prepare("SELECT MAX(CAST(SUBSTRING($column, ?) AS UNSIGNED)) as max_id FROM $table");
-    $stmt->execute([strlen($prefix) + 1]);
-    $result = $stmt->fetch();
-    $next_id = ($result['max_id'] ?? 0) + 1;
-    return $prefix . str_pad($next_id, 6, '0', STR_PAD_LEFT);
+    do {
+        // Generate a random 6-digit number
+        $random_id = mt_rand(100000, 999999);
+        $id = $prefix . $random_id;
+        
+        // Check if this ID already exists
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM $table WHERE $column = ?");
+        $stmt->execute([$id]);
+        $result = $stmt->fetch();
+    } while ($result['count'] > 0); // Keep generating until we get a unique ID
+    
+    return $id;
 }
 
 function sanitize($data) {

@@ -1,3 +1,10 @@
+// Bulk select/deselect checkboxes for patients
+function toggleSelectAll(source) {
+    const checkboxes = document.querySelectorAll('input[name="selected_patients[]"]');
+    for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = source.checked;
+    }
+}
 // Patient Management System JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
